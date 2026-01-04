@@ -38,6 +38,39 @@ router.get("/", auth, async (req, res) => {
   res.send(tasksWithFilteredComments);
 });
 
+// Get tasks created by me but not assigned to me
+// Returns tasks where user is the creator but NOT assigned to the user by email
+// Excludes deleted tasks
+router.get("/created-by-me", auth, async (req, res) => {
+  // Convert email to lowercase for consistent comparison
+  const userEmail = req.user.email.toLowerCase();
+
+  const tasks = await Task.find(
+    {
+      createdBy: req.user._id,
+      assignedTo: { $ne: userEmail },
+      deleted: { $ne: true },
+    },
+    excludeVField
+  )
+    .populate("createdBy", "name email")
+    .sort({ createdOn: -1 });
+
+  // Filter deleted comments from all tasks and ensure IDs are included
+  const tasksWithFilteredComments = tasks.map((task) => {
+    const taskObj = task.toObject();
+    taskObj.comments = taskObj.comments
+      .filter((comment) => !comment.deleted)
+      .map((comment) => ({
+        ...comment,
+        _id: comment._id || comment.id,
+      }));
+    return taskObj;
+  });
+
+  res.send(tasksWithFilteredComments);
+});
+
 // Get categories with statistics
 // Returns categories with task count and percentage done
 router.get("/categories", auth, async (req, res) => {
