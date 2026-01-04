@@ -5,13 +5,6 @@ const cors = require("cors");
 require("express-async-errors");
 const logger = require("./services/logging");
 
-const allowedOrigins = [
-  "https://audiophile-ecommerce-webapp.vercel.app", // Production
-  "http://localhost:5173", // Development web
-  "http://localhost:8081", // Expo web
-  "exp://localhost:8081", // Expo
-];
-
 // Enable JSON parsing (must be before CORS)
 app.use(express.json());
 
@@ -25,18 +18,11 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   const origin = req.headers.origin;
 
-  // Allow all origins in development, or check against allowed list
-  if (process.env.NODE_ENV === "production") {
-    if (allowedOrigins.includes(origin)) {
-      res.setHeader("Access-Control-Allow-Origin", origin);
-    }
+  // Allow all origins
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
   } else {
-    // In development, allow all origins (for React Native/Expo)
-    if (origin) {
-      res.setHeader("Access-Control-Allow-Origin", origin);
-    } else {
-      res.setHeader("Access-Control-Allow-Origin", "*");
-    }
+    res.setHeader("Access-Control-Allow-Origin", "*");
   }
 
   res.setHeader(
@@ -57,12 +43,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// CORS middleware - more permissive in development
+// CORS middleware - allow all origins
 app.use(
   cors({
-    origin: process.env.NODE_ENV === "production" 
-      ? allowedOrigins 
-      : true, // Allow all origins in development
+    origin: true, // Allow all origins
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-auth-token"],
     credentials: true,
