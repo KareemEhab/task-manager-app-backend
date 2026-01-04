@@ -63,10 +63,16 @@ require("./startup/config")();
 require("./startup/validation")();
 require("./startup/prod")(app);
 
-const port = process.env.PORT || 3000;
-// Listen on all network interfaces (0.0.0.0) to allow connections from devices/emulators
-app.listen(port, "0.0.0.0", () => {
-  logger.info(`Listening on port ${port}`);
-  logger.info(`Server accessible at http://localhost:${port}`);
-  logger.info(`For device/emulator access, use your machine's IP address`);
-});
+// Export app for serverless functions (Netlify)
+module.exports = app;
+
+// Only start server if running locally (not in serverless environment)
+if (require.main === module) {
+  const port = process.env.PORT || 3000;
+  // Listen on all network interfaces (0.0.0.0) to allow connections from devices/emulators
+  app.listen(port, "0.0.0.0", () => {
+    logger.info(`Listening on port ${port}`);
+    logger.info(`Server accessible at http://localhost:${port}`);
+    logger.info(`For device/emulator access, use your machine's IP address`);
+  });
+}

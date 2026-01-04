@@ -46,6 +46,9 @@ module.exports = function () {
       console.error(
         "4. Check that your connection string is properly formatted"
       );
-      process.exit(1);
+      // Only exit if not in serverless environment
+      if (!process.env.AWS_LAMBDA_FUNCTION_NAME && !process.env.NETLIFY) {
+        process.exit(1);
+      }
     });
 };
