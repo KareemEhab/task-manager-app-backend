@@ -3,20 +3,19 @@
 require("../../startup/mongoose");
 
 const serverless = require("serverless-http");
+const mongoose = require("mongoose");
 const dbSetup = require("../../startup/db");
 
-// Initialize database connection
+// Initialize database connection (non-blocking)
 dbSetup();
 
 const app = require("../../index");
 
-// Create serverless handler with connection check
+// Create serverless handler
 const handler = serverless(app);
 
 // Wrap handler to ensure DB connection before processing
 exports.handler = async (event, context) => {
-  const mongoose = require("mongoose");
-
   // Ensure connection before processing request
   if (mongoose.connection.readyState !== 1) {
     try {
@@ -31,6 +30,9 @@ exports.handler = async (event, context) => {
       console.error("Failed to establish DB connection:", err);
       return {
         statusCode: 503,
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           error: true,
           message: "Database connection unavailable. Please try again.",

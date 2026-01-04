@@ -6,6 +6,7 @@
 [functions]
   node_bundler = "esbuild"
   included_files = ["**/*.js", "**/*.json"]
+  external_node_modules = ["mongoose", "mongodb"]
 
 # Redirect all API routes to the serverless function
 [[redirects]]
