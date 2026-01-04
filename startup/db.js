@@ -33,8 +33,14 @@ async function connect() {
     logger.error(error.message);
     console.error("Error: DB environment variable is not set");
     isConnecting = false;
-    // Only exit if not in serverless environment
-    if (!process.env.AWS_LAMBDA_FUNCTION_NAME && !process.env.NETLIFY) {
+    // Never exit in serverless/Netlify environment - just throw error
+    // Check for Netlify environment variables
+    const isServerless =
+      process.env.AWS_LAMBDA_FUNCTION_NAME ||
+      process.env.NETLIFY ||
+      process.env.NETLIFY_DEV ||
+      process.env._HANDLER;
+    if (!isServerless) {
       process.exit(1);
     }
     throw error;
@@ -87,8 +93,14 @@ async function connect() {
     );
     console.error("3. Ensure your MongoDB Atlas cluster is running");
     console.error("4. Check that your connection string is properly formatted");
-    // Only exit if not in serverless environment
-    if (!process.env.AWS_LAMBDA_FUNCTION_NAME && !process.env.NETLIFY) {
+    // Never exit in serverless/Netlify environment - just throw error
+    // Check for Netlify environment variables
+    const isServerless =
+      process.env.AWS_LAMBDA_FUNCTION_NAME ||
+      process.env.NETLIFY ||
+      process.env.NETLIFY_DEV ||
+      process.env._HANDLER;
+    if (!isServerless) {
       process.exit(1);
     }
     throw err;
