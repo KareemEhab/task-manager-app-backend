@@ -1,4 +1,10 @@
 require("dotenv").config();
+
+// Configure Mongoose BEFORE any models are loaded
+// This is critical for serverless environments
+require("./startup/mongoose");
+const mongoose = require("mongoose");
+
 const express = require("express");
 const app = express();
 const cors = require("cors");
@@ -56,9 +62,65 @@ app.use(
 // Handle preflight requests
 app.options("*", cors());
 
+// Database connection setup
+const dbSetup = require("./startup/db");
+dbSetup();
+
+// Middleware to ensure database connection before processing requests
+// This is especially important in serverless environments
+app.use(async (req, res, next) => {
+  // Skip database check for OPTIONS requests
+  if (req.method === "OPTIONS") {
+    return next();
+  }
+
+  try {
+    // Check if connected
+    if (mongoose.connection.readyState === 1) {
+      return next();
+    }
+
+    // If connecting (readyState === 2), wait for connection with timeout
+    if (mongoose.connection.readyState === 2) {
+      const startTime = Date.now();
+      const timeout = 25000; // 25 seconds timeout
+      
+      while (mongoose.connection.readyState === 2 && (Date.now() - startTime) < timeout) {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+      
+      if (mongoose.connection.readyState === 1) {
+        return next();
+      }
+    }
+
+    // Ensure connection is established
+    await dbSetup.ensureConnection();
+    
+    // Verify connection is ready by checking readyState
+    let attempts = 0;
+    while (mongoose.connection.readyState !== 1 && attempts < 50) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      attempts++;
+    }
+    
+    if (mongoose.connection.readyState !== 1) {
+      throw new Error("Database connection could not be established");
+    }
+    
+    next();
+  } catch (err) {
+    logger.error("Database connection failed in middleware:", err);
+    return res.status(503).json({
+      error: true,
+      message: "Database connection unavailable. Please try again.",
+      details: process.env.NODE_ENV === "development" ? err.message : undefined,
+    });
+  }
+});
+
 // Routes and other setup
 require("./startup/routes")(app);
-require("./startup/db")();
 require("./startup/config")();
 require("./startup/validation")();
 require("./startup/prod")(app);
