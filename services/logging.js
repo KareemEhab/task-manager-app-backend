@@ -10,8 +10,9 @@ const logger = winston.createLogger({
     new MongoDB({
       db: process.env.DB, // Your MongoDB connection string
       options: {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
+        // Modern Mongoose options (useNewUrlParser and useUnifiedTopology are deprecated in Mongoose 8+)
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
       },
       collection: "logs", // Collection name where logs will be stored
     }),
