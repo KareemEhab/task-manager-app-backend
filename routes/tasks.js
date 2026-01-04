@@ -6,8 +6,8 @@ const { Task, validate, validateUpdate } = require("../models/task");
 // Function to exclude __v field
 const excludeVField = { __v: 0 };
 
-// Get all tasks for the authenticated user
-// Returns tasks where user is the creator OR assigned to the user by email
+// Get all tasks assigned to the authenticated user
+// Returns tasks where user is assigned to the task by email (from token)
 // Excludes deleted tasks
 router.get("/", auth, async (req, res) => {
   // Convert email to lowercase for consistent comparison
@@ -15,7 +15,7 @@ router.get("/", auth, async (req, res) => {
 
   const tasks = await Task.find(
     {
-      $or: [{ createdBy: req.user._id }, { assignedTo: userEmail }],
+      assignedTo: userEmail,
       deleted: { $ne: true },
     },
     excludeVField
