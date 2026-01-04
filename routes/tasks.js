@@ -10,9 +10,12 @@ const excludeVField = { __v: 0 };
 // Returns tasks where user is the creator OR assigned to the user by email
 // Excludes deleted tasks
 router.get("/", auth, async (req, res) => {
+  // Convert email to lowercase for consistent comparison
+  const userEmail = req.user.email.toLowerCase();
+
   const tasks = await Task.find(
     {
-      $or: [{ createdBy: req.user._id }, { assignedTo: req.user.email }],
+      $or: [{ createdBy: req.user._id }, { assignedTo: userEmail }],
       deleted: { $ne: true },
     },
     excludeVField
@@ -38,8 +41,11 @@ router.get("/", auth, async (req, res) => {
 // Get categories with statistics
 // Returns categories with task count and percentage done
 router.get("/categories", auth, async (req, res) => {
+  // Convert email to lowercase for consistent comparison
+  const userEmail = req.user.email.toLowerCase();
+
   const tasks = await Task.find({
-    $or: [{ createdBy: req.user._id }, { assignedTo: req.user.email }],
+    $or: [{ createdBy: req.user._id }, { assignedTo: userEmail }],
     deleted: { $ne: true },
   });
 
@@ -85,9 +91,12 @@ router.post("/:id/comments", auth, async (req, res) => {
     return res.status(400).send("Comment is required.");
   }
 
+  // Convert email to lowercase for consistent comparison
+  const userEmail = req.user.email.toLowerCase();
+
   const task = await Task.findOne({
     _id: req.params.id,
-    $or: [{ createdBy: req.user._id }, { assignedTo: req.user.email }],
+    $or: [{ createdBy: req.user._id }, { assignedTo: userEmail }],
     deleted: { $ne: true },
   });
 
@@ -128,9 +137,12 @@ router.post("/:id/comments", auth, async (req, res) => {
 
 // Delete comment (mark as deleted) (must be before /:id route)
 router.delete("/:id/comments/:commentId", auth, async (req, res) => {
+  // Convert email to lowercase for consistent comparison
+  const userEmail = req.user.email.toLowerCase();
+
   const task = await Task.findOne({
     _id: req.params.id,
-    $or: [{ createdBy: req.user._id }, { assignedTo: req.user.email }],
+    $or: [{ createdBy: req.user._id }, { assignedTo: userEmail }],
     deleted: { $ne: true },
   });
 
@@ -181,9 +193,12 @@ router.delete("/:id/comments/:commentId", auth, async (req, res) => {
 // Returns task if user is the creator OR assigned to the user by email
 // Excludes deleted tasks
 router.get("/:id", auth, async (req, res) => {
+  // Convert email to lowercase for consistent comparison
+  const userEmail = req.user.email.toLowerCase();
+
   const task = await Task.findOne({
     _id: req.params.id,
-    $or: [{ createdBy: req.user._id }, { assignedTo: req.user.email }],
+    $or: [{ createdBy: req.user._id }, { assignedTo: userEmail }],
     deleted: { $ne: true },
   })
     .select(excludeVField)
@@ -212,9 +227,18 @@ router.post("/", auth, async (req, res) => {
   const { error } = validate(req.body);
   if (error) return res.status(400).send(error.details[0].message);
 
+  // If assignedTo is not provided, use the creator's email from the token
+  // If assignedTo is provided, use that email
+  // Convert to lowercase for consistent comparison
+  const userEmail = req.user.email.toLowerCase();
+  const assignedToEmail = req.body.assignedTo
+    ? req.body.assignedTo.toLowerCase()
+    : userEmail;
+
   const task = new Task({
     ...req.body,
     createdBy: req.user._id,
+    assignedTo: assignedToEmail,
   });
 
   await task.save();
@@ -245,9 +269,12 @@ router.put("/:id", auth, async (req, res) => {
     return res.status(400).send(error.details[0].message);
   }
 
+  // Convert email to lowercase for consistent comparison
+  const userEmail = req.user.email.toLowerCase();
+
   const task = await Task.findOne({
     _id: req.params.id,
-    $or: [{ createdBy: req.user._id }, { assignedTo: req.user.email }],
+    $or: [{ createdBy: req.user._id }, { assignedTo: userEmail }],
     deleted: { $ne: true },
   });
 
@@ -260,7 +287,17 @@ router.put("/:id", auth, async (req, res) => {
     req.body.comments = req.body.comments.filter((comment) => !comment.deleted);
   }
 
-  Object.assign(task, req.body);
+  // If assignedTo is provided in the update, convert to lowercase
+  // Otherwise, keep the existing assignedTo value
+  const updateData = { ...req.body };
+  if (updateData.assignedTo !== undefined && updateData.assignedTo !== "") {
+    updateData.assignedTo = updateData.assignedTo.toLowerCase();
+  } else {
+    // Remove assignedTo from update if not provided, to keep existing value
+    delete updateData.assignedTo;
+  }
+
+  Object.assign(task, updateData);
   const updatedTask = await task.save();
 
   // Filter out deleted comments before sending
@@ -285,9 +322,12 @@ router.put("/:id", auth, async (req, res) => {
 // Delete task by ID (marks as deleted instead of actually deleting)
 // Allows delete if user is the creator OR assigned to the task
 router.delete("/:id", auth, async (req, res) => {
+  // Convert email to lowercase for consistent comparison
+  const userEmail = req.user.email.toLowerCase();
+
   const task = await Task.findOne({
     _id: req.params.id,
-    $or: [{ createdBy: req.user._id }, { assignedTo: req.user.email }],
+    $or: [{ createdBy: req.user._id }, { assignedTo: userEmail }],
     deleted: { $ne: true },
   });
 

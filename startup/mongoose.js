@@ -9,4 +9,3 @@ mongoose.set("bufferCommands", false);
 // not global mongoose.set() options. They are set in the connection options in startup/db.js
 
 module.exports = mongoose;
-

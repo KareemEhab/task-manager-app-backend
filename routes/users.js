@@ -21,7 +21,10 @@ router.post("/", async (req, res, next) => {
       });
     }
 
-    let user = await User.findOne({ email: req.body.email });
+    // Convert email to lowercase for consistent comparison
+    const email = req.body.email.toLowerCase();
+    
+    let user = await User.findOne({ email: email });
     if (user) {
       return res.status(400).json({
         error: true,
@@ -29,7 +32,10 @@ router.post("/", async (req, res, next) => {
       });
     }
 
-    user = new User(_.pick(req.body, ["name", "email", "password"]));
+    user = new User({
+      ..._.pick(req.body, ["name", "password"]),
+      email: email,
+    });
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(user.password, salt);
     await user.save();

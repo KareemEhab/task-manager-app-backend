@@ -82,8 +82,12 @@ const taskSchema = new mongoose.Schema({
   },
 });
 
+// Pre-save hook to ensure assignedTo email is always lowercase
 taskSchema.pre("save", function (next) {
   this.lastUpdated = new Date();
+  if (this.assignedTo) {
+    this.assignedTo = this.assignedTo.toLowerCase();
+  }
   next();
 });
 

@@ -24,9 +24,17 @@ const userSchema = new mongoose.Schema({
   },
 });
 
+// Pre-save hook to ensure email is always lowercase
+userSchema.pre("save", function (next) {
+  if (this.email) {
+    this.email = this.email.toLowerCase();
+  }
+  next();
+});
+
 userSchema.methods.generateAuthToken = function () {
   const token = jwt.sign(
-    { _id: this._id, email: this.email, name: this.name },
+    { _id: this._id, email: this.email.toLowerCase(), name: this.name },
     process.env.SECRET_KEY
   );
   return token;

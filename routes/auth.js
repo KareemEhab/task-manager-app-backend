@@ -16,7 +16,10 @@ router.post("/", async (req, res, next) => {
       });
     }
 
-    let user = await User.findOne({ email: req.body.email });
+    // Convert email to lowercase for consistent comparison
+    const email = req.body.email.toLowerCase();
+    
+    let user = await User.findOne({ email: email });
     if (!user) {
       return res.status(400).json({
         error: true,
